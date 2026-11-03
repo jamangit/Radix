@@ -9,6 +9,9 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.162.0",
+    "simplemma>=2.0.0",
+    "stopwordsiso>=0.7.1",
+    "wordfreq>=3.1.1",
 ]
 
 [build-system]
@@ -35,3 +38,7 @@ strict = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[[tool.mypy.overrides]]
+module = ["wordfreq.*", "simplemma.*", "stopwordsiso.*"]
+ignore_missing_imports = true
