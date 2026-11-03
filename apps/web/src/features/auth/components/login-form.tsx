@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { login } from "@/lib/api/auth";
 import { loginSchema, type LoginInput } from "../schemas";
 import { Field } from "./field";
 import { PasswordInput } from "./password-input";
+import { authErrorMessage, login } from "@/lib/api/auth";
 
 export function LoginForm() {
   const router = useRouter();
@@ -20,9 +21,14 @@ export function LoginForm() {
     formState: { errors },
   } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
 
+  const queryClient = useQueryClient();
+
   const mutation = useMutation({
     mutationFn: login,
-    onSuccess: () => router.push("/dashboard"),
+    onSuccess: (user) => {
+      queryClient.setQueryData(["me"], user);
+      router.push("/dashboard");
+    },
   });
 
   return (
@@ -35,7 +41,7 @@ export function LoginForm() {
       </Field>
       {mutation.isError && (
         <p role="alert" className="text-sm text-destructive">
-          Something went wrong. Please try again.
+          {authErrorMessage(mutation.error)}
         </p>
       )}
       <Button type="submit" className="h-11 w-full" disabled={mutation.isPending}>
