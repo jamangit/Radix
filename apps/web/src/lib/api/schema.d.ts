@@ -42,8 +42,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AnalysisResult */
-        AnalysisResult: {
+        /** AnalyzeRequest */
+        AnalyzeRequest: {
+            /** Text */
+            text: string;
+            /** Language */
+            language?: ("fr" | "en") | null;
+        };
+        /** AnalyzeResponse */
+        AnalyzeResponse: {
             /**
              * Language
              * @enum {string}
@@ -59,17 +66,15 @@ export interface components {
             top_words: components["schemas"]["WordCount"][];
             /** Rare Words */
             rare_words: components["schemas"]["RareWord"][];
-        };
-        /** AnalyzeRequest */
-        AnalyzeRequest: {
-            /** Text */
-            text: string;
             /**
-             * Language
-             * @default fr
+             * Detected Language
              * @enum {string}
              */
-            language: "fr" | "en";
+            detected_language: "fr" | "en";
+            /** Detection Confidence */
+            detection_confidence: number;
+            /** Language Mismatch */
+            language_mismatch: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -131,7 +136,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AnalysisResult"];
+                    "application/json": components["schemas"]["AnalyzeResponse"];
                 };
             };
             /** @description Validation Error */

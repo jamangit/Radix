@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 
-export type AnalysisResult = components["schemas"]["AnalysisResult"];
+export type AnalysisResult = components["schemas"]["AnalysisResponse"];
 export type AnalyzeRequest = components["schemas"]["AnalyzeRequest"];
 
 export function useAnalyze() {

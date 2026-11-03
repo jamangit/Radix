@@ -8,16 +8,26 @@ import { useAnalyze, type AnalyzeRequest } from "../use-analyze";
 import { Results } from "./results";
 
 type Language = NonNullable<AnalyzeRequest["language"]>;
+type LanguageChoice = Language | "auto";
 
-const LANGUAGES: { value: Language; label: string }[] = [
+const LANGUAGE_NAMES: Record<Language, string> = { fr: "French", en: "English" };
+
+const CHOICES: { value: LanguageChoice; label: string }[] = [
+  { value: "auto", label: "Auto" },
   { value: "fr", label: "Français" },
   { value: "en", label: "English" },
 ];
 
 export function Analyzer() {
   const [text, setText] = useState("");
-  const [language, setLanguage] = useState<Language>("fr");
+  const [choice, setChoice] = useState<LanguageChoice>("auto");
   const mutation = useAnalyze();
+  const result = mutation.data;
+
+  const run = (next: LanguageChoice) => {
+    setChoice(next);
+    mutation.mutate({ text, language: next === "auto" ? null : next });
+  };
 
   const canSubmit = text.trim().length > 0 && !mutation.isPending;
 
@@ -33,19 +43,19 @@ export function Analyzer() {
         />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-2" role="group" aria-label="Language">
-            {LANGUAGES.map(({ value, label }) => (
+            {CHOICES.map(({ value, label }) => (
               <Button
                 key={value}
                 type="button"
                 size="sm"
-                variant={language === value ? "default" : "outline"}
-                onClick={() => setLanguage(value)}
+                variant={choice === value ? "default" : "outline"}
+                onClick={() => setChoice(value)}
               >
                 {label}
               </Button>
             ))}
           </div>
-          <Button disabled={!canSubmit} onClick={() => mutation.mutate({ text, language })}>
+          <Button disabled={!canSubmit} onClick={() => run(choice)}>
             {mutation.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
             Analyze
           </Button>
@@ -57,7 +67,29 @@ export function Analyzer() {
         )}
       </div>
 
-      {mutation.data && <Results result={mutation.data} />}
+      {result?.language_mismatch && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-accent px-4 py-3 text-sm"
+        >
+          <p>
+            This text looks like {LANGUAGE_NAMES[result.detected_language]}, but it was analyzed as{" "}
+            {LANGUAGE_NAMES[result.language]}.
+          </p>
+          <Button size="sm" variant="outline" onClick={() => run(result.detected_language)}>
+            Analyze as {LANGUAGE_NAMES[result.detected_language]}
+          </Button>
+        </div>
+      )}
+
+      {result && (
+        <>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Analyzed as {LANGUAGE_NAMES[result.language]}
+          </p>
+          <Results result={result} />
+        </>
+      )}
     </div>
   );
 }
