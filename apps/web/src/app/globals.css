@@ -116,3 +116,9 @@
     @apply font-sans;
   }
 }
+
+.recharts-wrapper,
+.recharts-wrapper :focus,
+.recharts-wrapper :focus-visible {
+  outline: none;
+}

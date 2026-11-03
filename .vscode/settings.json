@@ -1,4 +1,8 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system",
-    "python.defaultInterpreterPath": "${workspaceFolder}/apps/api/.venv/bin/python"
+  "python.defaultInterpreterPath": "${workspaceFolder}/apps/api/.venv/bin/python",
+  "python.analysis.extraPaths": ["${workspaceFolder}/apps/api/src"],
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["apps/api/tests"],
+  "css.lint.unknownAtRules": "ignore",
+  "files.associations": { "*.css": "tailwindcss" }
 }

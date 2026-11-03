@@ -9,7 +9,7 @@ from .models import AnalysisResult, Language, RareWord, WordCount
 from .tokenizer import strip_elision, tokenize
 
 DEFAULT_TOP_N = 10
-DEFAULT_RARE_THRESHOLD = 3.0
+DEFAULT_RARE_THRESHOLD = 3.5
 
 
 @cache
