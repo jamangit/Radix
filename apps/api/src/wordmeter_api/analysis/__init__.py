@@ -1,4 +1,11 @@
-from .analyzer import analyze_text
+from .analyzer import analyze_detailed, analyze_text
 from .models import AnalysisResult, Language, RareWord, WordCount
 
-__all__ = ["AnalysisResult", "Language", "RareWord", "WordCount", "analyze_text"]
+__all__ = [
+    "AnalysisResult",
+    "Language",
+    "RareWord",
+    "WordCount",
+    "analyze_detailed",
+    "analyze_text",
+]

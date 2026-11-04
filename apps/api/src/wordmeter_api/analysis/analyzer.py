@@ -17,13 +17,14 @@ def _stop_words(language: Language) -> frozenset[str]:
     return frozenset(stopwordsiso.stopwords(language))
 
 
-def analyze_text(
+def analyze_detailed(
     text: str,
     language: Language = "fr",
     *,
     top_n: int = DEFAULT_TOP_N,
     rare_threshold: float = DEFAULT_RARE_THRESHOLD,
-) -> AnalysisResult:
+) -> tuple[AnalysisResult, Counter[str]]:
+    """Analyze a text and also return the full count of meaningful words."""
     tokens = tokenize(text)
     stop_words = _stop_words(language)
 
@@ -46,7 +47,7 @@ def analyze_text(
     scored = sorted(((zipf_frequency(w, language), w) for w in counts), key=lambda p: (p[0], p[1]))
     rare_words = [RareWord(word=w, zipf=round(z, 2)) for z, w in scored if 0 < z < rare_threshold]
 
-    return AnalysisResult(
+    result = AnalysisResult(
         language=language,
         total_words=total,
         unique_words=unique,
@@ -54,3 +55,14 @@ def analyze_text(
         top_words=top_words,
         rare_words=rare_words[:top_n],
     )
+    return result, counts
+
+
+def analyze_text(
+    text: str,
+    language: Language = "fr",
+    *,
+    top_n: int = DEFAULT_TOP_N,
+    rare_threshold: float = DEFAULT_RARE_THRESHOLD,
+) -> AnalysisResult:
+    return analyze_detailed(text, language, top_n=top_n, rare_threshold=rare_threshold)[0]

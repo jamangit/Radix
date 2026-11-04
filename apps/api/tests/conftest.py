@@ -32,3 +32,15 @@ def client() -> Iterator[TestClient]:
         yield test_client
     app.dependency_overrides.clear()
     engine.dispose()
+
+
+@pytest.fixture
+def auth_client(client: TestClient) -> TestClient:
+    credentials = {
+        "name": "Ada Lovelace",
+        "email": "ada@example.com",
+        "password": "correct-horse-battery",
+    }
+    response = client.post("/auth/signup", json=credentials)
+    assert response.status_code == 201
+    return client

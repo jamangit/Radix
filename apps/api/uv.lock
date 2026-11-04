@@ -2555,6 +2555,7 @@ dependencies = [
     { name = "simplemma" },
     { name = "sqlalchemy" },
     { name = "stopwordsiso" },
+    { name = "tzdata" },
     { name = "wordfreq" },
 ]
 
@@ -2579,6 +2580,7 @@ requires-dist = [
     { name = "simplemma", specifier = ">=2.0.0" },
     { name = "sqlalchemy", specifier = ">=2.1.6" },
     { name = "stopwordsiso", specifier = ">=0.7.1" },
+    { name = "tzdata", specifier = ">=2026.6" },
     { name = "wordfreq", specifier = ">=3.1.1" },
 ]
 
