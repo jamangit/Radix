@@ -215,6 +215,10 @@ export interface components {
             analyses: number;
             /** Vocabulary Size */
             vocabulary_size: number;
+            /** Elapsed Days */
+            elapsed_days: number;
+            /** Words Per Day */
+            words_per_day: number;
             /** Top Words */
             top_words: components["schemas"]["WordCount"][];
             /** Series */

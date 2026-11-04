@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useStats, type Period } from "../use-stats";
 import { Stat } from "./stat";
 import { TopWordsChart } from "./top-words-chart";
+import { cn } from "@/lib/utils";
 
 const PERIODS: { value: Period; label: string }[] = [
   { value: "day", label: "Today" },
@@ -37,11 +38,22 @@ export function Recap() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Words" value={data ? format.format(data.total_words) : "–"} />
-        <Stat label="Vocabulary" value={data ? format.format(data.vocabulary_size) : "–"} />
-        <Stat label="Analyses" value={data ? format.format(data.analyses) : "–"} />
-      </div>
+        <div className={cn("grid gap-4 sm:grid-cols-3", period !== "day" && "lg:grid-cols-4")}>
+            <Stat label="Words" value={data ? format.format(data.total_words) : "–"} />
+            <Stat label="Vocabulary" value={data ? format.format(data.vocabulary_size) : "–"} />
+            <Stat label="Analyses" value={data ? format.format(data.analyses) : "–"} />
+            {period !== "day" && (
+            <Stat
+                label="Words per day"
+                value={data ? format.format(data.words_per_day) : "–"}
+                hint={
+                data
+                    ? `over ${data.elapsed_days} ${data.elapsed_days === 1 ? "day" : "days"}`
+                    : undefined
+                }
+            />
+            )}
+        </div>
 
       {isEmpty ? (
         <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
