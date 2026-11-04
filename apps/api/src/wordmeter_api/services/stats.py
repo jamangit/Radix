@@ -25,8 +25,14 @@ class StatsResponse(BaseModel):
     total_words: int
     analyses: int
     vocabulary_size: int
+    elapsed_days: int
+    words_per_day: float
     top_words: list[WordCount]
     series: list[SeriesPoint]
+
+
+def _as_utc(moment: datetime) -> datetime:
+    return moment if moment.tzinfo else moment.replace(tzinfo=UTC)
 
 
 def period_bounds(
@@ -47,6 +53,15 @@ def period_bounds(
     return start, end
 
 
+def count_elapsed_days(
+    start: datetime, account_created_at: datetime, now: datetime, tz: ZoneInfo
+) -> int:
+    """Days elapsed in the period, today included, counted from sign-up for newer accounts."""
+    signup_day = _as_utc(account_created_at).astimezone(tz).date()
+    first_day = max(start.date(), signup_day)
+    return max((now.astimezone(tz).date() - first_day).days + 1, 1)
+
+
 def _slots(period: Period, start: datetime) -> list[tuple[int, str]]:
     if period == "day":
         return [(hour, f"{hour:02d}:00") for hour in range(24)]
@@ -64,8 +79,16 @@ def _slot_key(period: Period, local: datetime) -> int:
     return local.month
 
 
-def get_stats(session: Session, user_id: uuid.UUID, period: Period, tz: ZoneInfo) -> StatsResponse:
-    start, end = period_bounds(period, tz)
+def get_stats(
+    session: Session,
+    user_id: uuid.UUID,
+    period: Period,
+    tz: ZoneInfo,
+    account_created_at: datetime,
+    now: datetime | None = None,
+) -> StatsResponse:
+    local_now = (now or datetime.now(tz)).astimezone(tz)
+    start, end = period_bounds(period, tz, now=local_now)
     in_period = (
         Analysis.user_id == user_id,
         Analysis.created_at >= start.astimezone(UTC),
@@ -77,8 +100,7 @@ def get_stats(session: Session, user_id: uuid.UUID, period: Period, tz: ZoneInfo
     ).all()
     words_per_slot: dict[int, int] = {}
     for created_at, total in rows:
-        moment = created_at if created_at.tzinfo else created_at.replace(tzinfo=UTC)
-        key = _slot_key(period, moment.astimezone(tz))
+        key = _slot_key(period, _as_utc(created_at).astimezone(tz))
         words_per_slot[key] = words_per_slot.get(key, 0) + total
 
     vocabulary = (
@@ -101,11 +123,16 @@ def get_stats(session: Session, user_id: uuid.UUID, period: Period, tz: ZoneInfo
         .limit(TOP_WORDS_LIMIT)
     ).all()
 
+    total_words = sum(words_per_slot.values())
+    elapsed_days = count_elapsed_days(start, account_created_at, local_now, tz)
+
     return StatsResponse(
         period=period,
-        total_words=sum(words_per_slot.values()),
+        total_words=total_words,
         analyses=len(rows),
         vocabulary_size=vocabulary,
+        elapsed_days=elapsed_days,
+        words_per_day=round(total_words / elapsed_days, 1),
         top_words=[WordCount(word=word, count=int(total)) for word, total in top],
         series=[
             SeriesPoint(label=label, words=words_per_slot.get(key, 0))

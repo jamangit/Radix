@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
 
-from wordmeter_api.services.stats import period_bounds
+from wordmeter_api.services.stats import count_elapsed_days, period_bounds
 
 
 def test_analyze_requires_authentication(client: TestClient) -> None:
@@ -67,3 +67,32 @@ def test_day_bounds_follow_the_user_timezone() -> None:
     start, _ = period_bounds("day", ZoneInfo("Pacific/Auckland"), now=now)
 
     assert start.day == 5
+
+
+def test_elapsed_days_for_an_old_account_start_with_the_month() -> None:
+    paris = ZoneInfo("Europe/Paris")
+    now = datetime(2026, 11, 20, 12, tzinfo=paris)
+    start, _ = period_bounds("month", paris, now=now)
+
+    days = count_elapsed_days(start, datetime(2025, 1, 1, tzinfo=UTC), now, paris)
+
+    assert days == 20
+
+
+def test_elapsed_days_for_a_new_account_start_at_signup() -> None:
+    paris = ZoneInfo("Europe/Paris")
+    now = datetime(2026, 11, 20, 12, tzinfo=paris)
+    start, _ = period_bounds("month", paris, now=now)
+
+    days = count_elapsed_days(start, datetime(2026, 11, 18, 9, tzinfo=UTC), now, paris)
+
+    assert days == 3
+
+
+def test_words_per_day_for_a_brand_new_account(auth_client: TestClient) -> None:
+    auth_client.post("/analyze", json={"text": "Le chat mange. Le chat dort.", "language": "fr"})
+
+    body = auth_client.get("/stats", params={"period": "month"}).json()
+
+    assert body["elapsed_days"] == 1
+    assert body["words_per_day"] == 6.0
