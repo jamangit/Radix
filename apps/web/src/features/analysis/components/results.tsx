@@ -1,14 +1,6 @@
 import type { AnalysisResult } from "../use-analyze";
 import { TopWordsChart } from "./top-words-chart";
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border bg-card p-5">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-2 font-serif text-3xl tracking-tight">{value}</p>
-    </div>
-  );
-}
+import { Stat } from "./stat";
 
 export function Results({ result }: { result: AnalysisResult }) {
   const format = new Intl.NumberFormat("en-US");

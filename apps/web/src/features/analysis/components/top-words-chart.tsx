@@ -1,7 +1,6 @@
 "use client";
 
 import { Bar, BarChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { AnalysisResult } from "../use-analyze";
 
 const MAX_LABEL_LENGTH = 12;
 
@@ -22,7 +21,7 @@ function WordTick({ x = 0, y = 0, payload }: WordTickProps) {
   );
 }
 
-export function TopWordsChart({ data }: { data: AnalysisResult["top_words"] }) {
+export function TopWordsChart({ data }: { data: { word: string; count: number }[] }) {
   return (
     <div className="h-80">
       <ResponsiveContainer width="100%" height="100%">

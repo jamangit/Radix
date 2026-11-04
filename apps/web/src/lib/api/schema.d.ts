@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Stats */
+        get: operations["read_stats_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -166,6 +183,13 @@ export interface components {
             /** Zipf */
             zipf: number;
         };
+        /** SeriesPoint */
+        SeriesPoint: {
+            /** Label */
+            label: string;
+            /** Words */
+            words: number;
+        };
         /** SignupRequest */
         SignupRequest: {
             /** Name */
@@ -177,6 +201,24 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** StatsResponse */
+        StatsResponse: {
+            /**
+             * Period
+             * @enum {string}
+             */
+            period: "day" | "month" | "year";
+            /** Total Words */
+            total_words: number;
+            /** Analyses */
+            analyses: number;
+            /** Vocabulary Size */
+            vocabulary_size: number;
+            /** Top Words */
+            top_words: components["schemas"]["WordCount"][];
+            /** Series */
+            series: components["schemas"]["SeriesPoint"][];
         };
         /** UserResponse */
         UserResponse: {
@@ -339,7 +381,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -354,6 +398,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalyzeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_stats_stats_get: {
+        parameters: {
+            query?: {
+                period?: "day" | "month" | "year";
+                timezone?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsResponse"];
                 };
             };
             /** @description Validation Error */
