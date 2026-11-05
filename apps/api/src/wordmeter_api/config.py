@@ -10,5 +10,10 @@ class Settings(BaseSettings):
     access_token_minutes: int = 60 * 24 * 7
     cookie_secure: bool = False
 
+    whisper_model: str = "base"
+    whisper_compute_type: str = "int8"
+    max_audio_mb: int = 25
+    max_audio_seconds: int = 600
+
 
 settings = Settings()  # type: ignore[call-arg]  # values are read from the environment
