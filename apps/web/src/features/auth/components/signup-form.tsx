@@ -7,11 +7,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { signup } from "@/lib/api/auth";
 import { signupSchema, type SignupInput } from "../schemas";
 import { Field } from "./field";
 import { PasswordInput } from "./password-input";
-import { authErrorMessage, login } from "@/lib/api/auth";
+import { authErrorMessage, signup } from "@/lib/api/auth";
 
 export function SignupForm() {
   const router = useRouter();

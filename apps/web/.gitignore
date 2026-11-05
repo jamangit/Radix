@@ -41,3 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 echo ".env" >> .gitignore
+
+/test-results/
+/playwright-report/
+
+/test-results/
+/playwright-report/
