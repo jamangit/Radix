@@ -11,4 +11,4 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]  # values are read from the environment
