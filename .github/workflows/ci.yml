@@ -34,7 +34,7 @@ jobs:
         working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           package_json_file: apps/web/package.json
       - uses: actions/setup-node@v4
@@ -74,7 +74,7 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: apps/api/uv.lock
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           package_json_file: apps/web/package.json
       - uses: actions/setup-node@v4
