@@ -2,7 +2,12 @@ import type { AnalysisResult } from "../use-analyze";
 import { TopWordsChart } from "./top-words-chart";
 import { Stat } from "./stat";
 
-export function Results({ result }: { result: AnalysisResult }) {
+type ResultData = Pick<
+  AnalysisResult,
+  "total_words" | "unique_words" | "lexical_diversity" | "top_words" | "rare_words"
+>;
+
+export function Results({ result }: { result: ResultData }) {
   const format = new Intl.NumberFormat("en-US");
 
   return (
