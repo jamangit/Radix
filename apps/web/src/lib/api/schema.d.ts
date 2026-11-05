@@ -106,6 +106,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transcribe Audio */
+        post: operations["transcribe_audio_transcribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -160,6 +177,13 @@ export interface components {
             detection_confidence: number;
             /** Language Mismatch */
             language_mismatch: boolean;
+        };
+        /** Body_transcribe_audio_transcribe_post */
+        Body_transcribe_audio_transcribe_post: {
+            /** Audio */
+            audio: string;
+            /** Language */
+            language?: ("fr" | "en") | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -223,6 +247,28 @@ export interface components {
             top_words: components["schemas"]["WordCount"][];
             /** Series */
             series: components["schemas"]["SeriesPoint"][];
+        };
+        /** TranscribeResponse */
+        TranscribeResponse: {
+            /**
+             * Language
+             * @enum {string}
+             */
+            language: "fr" | "en";
+            /** Total Words */
+            total_words: number;
+            /** Unique Words */
+            unique_words: number;
+            /** Lexical Diversity */
+            lexical_diversity: number;
+            /** Top Words */
+            top_words: components["schemas"]["WordCount"][];
+            /** Rare Words */
+            rare_words: components["schemas"]["RareWord"][];
+            /** Transcript */
+            transcript: string;
+            /** Audio Seconds */
+            audio_seconds: number;
         };
         /** UserResponse */
         UserResponse: {
@@ -436,6 +482,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcribe_audio_transcribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_transcribe_audio_transcribe_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscribeResponse"];
                 };
             };
             /** @description Validation Error */

@@ -1,6 +1,6 @@
 import { AuthGate } from "@/features/auth/components/auth-gate";
 import { UserMenu } from "@/features/auth/components/user-menu";
-import { Analyzer } from "@/features/analysis/components/analyzer";
+import { AnalyzeSection } from "@/features/analysis/components/analyze-section";
 import { Recap } from "@/features/analysis/components/recap";
 
 export default function DashboardPage() {
@@ -19,10 +19,7 @@ export default function DashboardPage() {
 
         <Recap />
 
-        <section className="space-y-4">
-          <h2 className="font-serif text-xl tracking-tight">Analyze a text</h2>
-          <Analyzer />
-        </section>
+        <AnalyzeSection />
       </main>
     </AuthGate>
   );

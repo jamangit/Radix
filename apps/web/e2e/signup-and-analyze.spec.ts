@@ -13,6 +13,7 @@ test("a new user can sign up, analyze a text and sign out", async ({ page }) => 
 
   await expect(page).toHaveURL(/\/dashboard/);
   await expect(page.getByRole("heading", { name: "Your words" })).toBeVisible();
+  await page.getByRole("button", { name: "Type", exact: true }).click();
 
   await page
     .getByPlaceholder("Paste or write a text here…")
