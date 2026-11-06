@@ -12,6 +12,7 @@ from wordmeter_api.security import (
     COOKIE_NAME,
     DUMMY_HASH,
     create_access_token,
+    create_ws_ticket,
     hash_password,
     verify_password,
 )
@@ -36,6 +37,10 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: str
     name: str
+
+
+class WsTicketResponse(BaseModel):
+    ticket: str
 
 
 def _set_session_cookie(response: Response, user: User) -> None:
@@ -87,3 +92,9 @@ def logout(response: Response) -> None:
 @router.get("/me", response_model=UserResponse)
 def me(user: CurrentUser) -> User:
     return user
+
+
+@router.post("/ws-ticket", response_model=WsTicketResponse)
+def ws_ticket(user: CurrentUser) -> WsTicketResponse:
+    """A 60-second ticket the browser uses to open the live transcription WebSocket."""
+    return WsTicketResponse(ticket=create_ws_ticket(str(user.id)))

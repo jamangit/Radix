@@ -15,5 +15,10 @@ class Settings(BaseSettings):
     max_audio_mb: int = 25
     max_audio_seconds: int = 600
 
+    preload_models: bool = False
+    ws_ticket_seconds: int = 60
+    max_stream_seconds: int = 1800
+    vad_silence_ms: int = 500
+
 
 settings = Settings()  # type: ignore[call-arg]  # values are read from the environment

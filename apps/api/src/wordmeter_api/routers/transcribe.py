@@ -36,7 +36,7 @@ def _resolve_language(requested: Language | None, detected: str) -> Language:
     if detected == "en":
         return "en"
     raise HTTPException(
-        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status.HTTP_422_UNPROCESSABLE_CONTENT,
         "Only French and English are supported for now.",
     )
 
@@ -49,7 +49,7 @@ def transcribe_audio(
     transcriber: TranscriberDep,
     language: Annotated[Language | None, Form()] = None,
 ) -> TranscribeResponse:
-    too_large = HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Recording is too large")
+    too_large = HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "Recording is too large")
     if audio.size is not None and audio.size > settings.max_audio_mb * 1024 * 1024:
         raise too_large
     try:
@@ -58,11 +58,11 @@ def transcribe_audio(
         raise too_large from None
     except InvalidAudioError:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Could not read this audio"
+            status.HTTP_422_UNPROCESSABLE_CONTENT, "Could not read this audio"
         ) from None
 
     if not transcription.text:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No speech detected")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "No speech detected")
 
     chosen = _resolve_language(language, transcription.language)
     result, counts = analyze_detailed(transcription.text, chosen)
