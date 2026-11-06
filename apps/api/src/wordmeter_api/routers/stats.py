@@ -19,5 +19,5 @@ def read_stats(
     try:
         tz = ZoneInfo(timezone)
     except (ZoneInfoNotFoundError, ValueError, OSError):
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Unknown timezone") from None
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Unknown timezone") from None
     return get_stats(session, user.id, period, tz, user.created_at)
