@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Analyzer } from "./analyzer";
-import { VoiceRecorder } from "./voice-recorder";
+import { LiveRecorder } from "./live-recorder";
 
 type Mode = "voice" | "text";
 
@@ -23,7 +23,7 @@ export function AnalyzeSection() {
           </Button>
         </div>
       </div>
-      {mode === "voice" ? <VoiceRecorder /> : <Analyzer />}
+      {mode === "voice" ? <LiveRecorder /> : <Analyzer />}
     </section>
   );
 }
