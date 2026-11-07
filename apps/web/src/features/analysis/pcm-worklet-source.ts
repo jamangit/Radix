@@ -1,12 +1,16 @@
-/* global AudioWorkletProcessor, registerProcessor, sampleRate */
-
+/**
+ * Source of the AudioWorklet that turns microphone audio into 16 kHz, 16-bit PCM,
+ * in packets of 100 ms. It is loaded from memory (see use-live-transcription.ts)
+ * so it never depends on a file being served.
+ */
+export const PCM_WORKLET_SOURCE = `
 const TARGET_RATE = 16000;
-const CHUNK_SAMPLES = 1600; // 100 ms
+const CHUNK_SAMPLES = 1600;
 
 class PcmProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
-    this.ratio = sampleRate / TARGET_RATE; // browsers record at 44.1 or 48 kHz
+    this.ratio = sampleRate / TARGET_RATE;
     this.sum = 0;
     this.count = 0;
     this.position = 0;
@@ -19,7 +23,6 @@ class PcmProcessor extends AudioWorkletProcessor {
     if (!channel) return true;
 
     for (let i = 0; i < channel.length; i++) {
-      // Averaging the input samples that fall in one output sample is a cheap low-pass filter.
       this.sum += channel[i];
       this.count += 1;
       this.position += 1;
@@ -42,3 +45,4 @@ class PcmProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor("pcm-processor", PcmProcessor);
+`;
