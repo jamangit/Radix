@@ -5,9 +5,20 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 import { websocketUrl } from "@/lib/ws-url";
+import {
+  NO_STREAK,
+  SILENT_DB,
+  hintFor,
+  levelDb,
+  trackQuality,
+  type AudioQuality,
+  type WeakStreak,
+} from "./audio-quality";
+import { PCM_WORKLET_SOURCE } from "./pcm-worklet-source";
 
 export type LiveStatus = "idle" | "connecting" | "listening" | "finishing";
 export type LiveLanguage = "auto" | "fr" | "en";
+
 type AnalyzeResponse = components["schemas"]["AnalyzeResponse"];
 
 export type LiveResult = Pick<
@@ -21,7 +32,14 @@ export type LiveResult = Pick<
 type ServerMessage =
   | { type: "ready" }
   | { type: "speech"; active: boolean }
-  | { type: "segment"; text: string; words: number; total_words: number }
+  | {
+      type: "segment";
+      text: string;
+      words: number;
+      total_words: number;
+      quality: AudioQuality;
+    }
+  | { type: "unclear"; quality: AudioQuality }
   | ({ type: "final" } & LiveResult)
   | { type: "error"; code: string; message: string };
 
@@ -43,8 +61,11 @@ export function useLiveTranscription() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<LiveStatus>("idle");
   const [speaking, setSpeaking] = useState(false);
+  const [level, setLevel] = useState(SILENT_DB);
   const [segments, setSegments] = useState<string[]>([]);
   const [totalWords, setTotalWords] = useState(0);
+  const [quality, setQuality] = useState<AudioQuality | null>(null);
+  const [streak, setStreak] = useState<WeakStreak>(NO_STREAK);
   const [result, setResult] = useState<LiveResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +78,7 @@ export function useLiveTranscription() {
     streamRef.current = null;
     void contextRef.current?.close();
     contextRef.current = null;
+    setLevel(SILENT_DB);
   }, []);
 
   const start = useCallback(
@@ -65,10 +87,13 @@ export function useLiveTranscription() {
       setResult(null);
       setSegments([]);
       setTotalWords(0);
+      setQuality(null);
+      setStreak(NO_STREAK);
       setSpeaking(false);
       setStatus("connecting");
 
-      const abort = (message: string) => {
+      const abort = (message: string, cause?: unknown) => {
+        if (cause !== undefined) console.error(message, cause);
         stopAudio();
         socketRef.current?.close();
         socketRef.current = null;
@@ -76,76 +101,118 @@ export function useLiveTranscription() {
         setStatus("idle");
       };
 
+      let stream: MediaStream;
       try {
-        streamRef.current = await navigator.mediaDevices.getUserMedia({
+        stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             channelCount: 1,
             echoCancellation: true,
             noiseSuppression: true,
-            autoGainControl: true,
+            // Automatic gain would hide how far the speaker is from the microphone.
+            autoGainControl: false,
           },
         });
+        streamRef.current = stream;
       } catch (cause) {
-        abort(microphoneMessage(cause));
+        abort(microphoneMessage(cause), cause);
         return;
       }
 
+      let ticket: string;
       try {
-        const { data } = await api.POST("/auth/ws-ticket");
-        if (!data) throw new Error("No ticket");
-
-        const socket = new WebSocket(
-          websocketUrl(`/ws/transcribe?ticket=${encodeURIComponent(data.ticket)}`),
-        );
-        socket.binaryType = "arraybuffer";
-        socketRef.current = socket;
-        let started = false;
-
-        socket.onopen = () => {
-          socket.send(
-            JSON.stringify({ type: "start", language: language === "auto" ? null : language }),
+        const { data, response } = await api.POST("/auth/ws-ticket");
+        if (!data) {
+          abort(
+            response.status === 401
+              ? "Your session has expired. Please sign in again."
+              : `The API refused the request (status ${response.status}).`,
           );
-          started = true;
-        };
+          return;
+        }
+        ticket = data.ticket;
+      } catch (cause) {
+        abort("Could not reach the API. Is it running?", cause);
+        return;
+      }
 
-        socket.onmessage = (event: MessageEvent<string>) => {
-          const message = JSON.parse(event.data) as ServerMessage;
-          switch (message.type) {
-            case "ready":
-              setStatus("listening");
-              break;
-            case "speech":
-              setSpeaking(message.active);
-              break;
-            case "segment":
-              setSegments((previous) => [...previous, message.text]);
-              setTotalWords(message.total_words);
-              break;
-            case "final":
-              setResult(message);
-              void queryClient.invalidateQueries({ queryKey: ["stats"] });
-              break;
-            case "error":
-              setError(message.message);
-              break;
-          }
-        };
+      let socket: WebSocket;
+      try {
+        socket = new WebSocket(
+          websocketUrl(`/ws/transcribe?ticket=${encodeURIComponent(ticket)}`),
+        );
+      } catch (cause) {
+        abort("The transcription server address is invalid.", cause);
+        return;
+      }
+      socket.binaryType = "arraybuffer";
+      socketRef.current = socket;
+      let started = false;
 
-        socket.onerror = () => setError("Could not reach the transcription server.");
+      socket.onopen = () => {
+        socket.send(
+          JSON.stringify({ type: "start", language: language === "auto" ? null : language }),
+        );
+        started = true;
+      };
 
-        socket.onclose = () => {
-          stopAudio();
-          socketRef.current = null;
-          setSpeaking(false);
-          setStatus("idle");
-        };
+      socket.onmessage = (event: MessageEvent<string>) => {
+        const message = JSON.parse(event.data) as ServerMessage;
+        switch (message.type) {
+          case "ready":
+            setStatus("listening");
+            break;
+          case "speech":
+            setSpeaking(message.active);
+            break;
+          case "segment":
+            setSegments((previous) => [...previous, message.text]);
+            setTotalWords(message.total_words);
+            setQuality(message.quality);
+            setStreak((previous) => trackQuality(previous, message.quality, true));
+            break;
+          case "unclear":
+            setStreak((previous) => trackQuality(previous, message.quality, false));
+            break;
+          case "final":
+            setResult(message);
+            void queryClient.invalidateQueries({ queryKey: ["stats"] });
+            break;
+          case "error":
+            setError(message.message);
+            break;
+        }
+      };
 
+      socket.onerror = () =>
+        setError(
+          "Could not reach the transcription server. Check that the API is running and, in Codespaces, that port 8000 is public.",
+        );
+
+      socket.onclose = () => {
+        stopAudio();
+        socketRef.current = null;
+        setSpeaking(false);
+        setStatus("idle");
+      };
+
+      try {
         const context = new AudioContext();
         contextRef.current = context;
-        await context.audioWorklet.addModule("/pcm-worklet.js");
-        const source = context.createMediaStreamSource(streamRef.current);
+        await context.resume();
+
+        const workletUrl = URL.createObjectURL(
+          new Blob([PCM_WORKLET_SOURCE], { type: "text/javascript" }),
+        );
+        try {
+          await context.audioWorklet.addModule(workletUrl);
+        } finally {
+          URL.revokeObjectURL(workletUrl);
+        }
+
+        const source = context.createMediaStreamSource(stream);
         const worklet = new AudioWorkletNode(context, "pcm-processor");
         worklet.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
+          setLevel(levelDb(new Int16Array(event.data)));
           if (started && socket.readyState === WebSocket.OPEN) socket.send(event.data);
         };
         // The worklet only runs when connected to the output, so route it through a muted gain.
@@ -153,8 +220,9 @@ export function useLiveTranscription() {
         source.connect(worklet);
         worklet.connect(mute);
         mute.connect(context.destination);
-      } catch {
-        abort("Could not start the live transcription.");
+      } catch (cause) {
+        const name = cause instanceof Error ? cause.name : "UnknownError";
+        abort(`The audio processor could not be started (${name}).`, cause);
       }
     },
     [queryClient, stopAudio],
@@ -175,5 +243,17 @@ export function useLiveTranscription() {
     };
   }, [stopAudio]);
 
-  return { status, speaking, segments, totalWords, result, error, start, stop };
+  return {
+    status,
+    speaking,
+    level,
+    segments,
+    totalWords,
+    quality,
+    hint: hintFor(streak),
+    result,
+    error,
+    start,
+    stop,
+  };
 }
