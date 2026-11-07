@@ -63,6 +63,7 @@ def test_a_phrase_is_transcribed_while_the_recording_continues(auth_client: Test
         assert segment["text"] == PHRASE
         assert segment["words"] == 5
         assert segment["total_words"] == 5
+        assert segment["quality"]["verdict"] == "ok"
 
 
 def test_the_running_count_adds_up_and_the_session_is_saved(auth_client: TestClient) -> None:
@@ -181,3 +182,33 @@ def test_a_malformed_first_message_is_rejected(auth_client: TestClient) -> None:
         ws.send_text("hello")
         with pytest.raises(WebSocketDisconnect):
             ws.receive_json()
+
+
+def test_a_faint_phrase_is_reported_as_too_quiet(
+    auth_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    use_fakes()
+    monkeypatch.setattr(settings, "quality_min_level_db", -10.0)
+
+    with open_session(auth_client) as ws:
+        start(ws)
+        ws.send_bytes(loud(640) + quiet(800))
+        segment = read_until(ws, "segment")
+
+    assert segment["quality"]["verdict"] == "too_quiet"
+
+
+def test_an_unintelligible_phrase_is_reported_with_its_audio_quality(
+    auth_client: TestClient,
+) -> None:
+    use_fakes(text="")
+
+    with open_session(auth_client) as ws:
+        start(ws)
+        ws.send_bytes(loud(640) + quiet(800))
+        unclear = read_until(ws, "unclear")
+        ws.send_json({"type": "stop"})
+        error = read_until(ws, "error")
+
+    assert unclear["quality"]["verdict"] == "ok"
+    assert error["code"] == "no_speech"

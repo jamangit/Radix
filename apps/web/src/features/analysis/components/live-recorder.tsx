@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { METER_FLOOR_DB } from "../audio-quality";
 import { useLiveTranscription, type LiveLanguage } from "../use-live-transcription";
 import { Results } from "./results";
 
@@ -12,6 +13,32 @@ const LANGUAGES: { value: LiveLanguage; label: string }[] = [
   { value: "fr", label: "Français" },
   { value: "en", label: "English" },
 ];
+
+// Same default as the server's QUALITY_MIN_LEVEL_DB: below it, the voice is considered faint.
+const FAINT_LEVEL_DB = -45;
+
+function LevelMeter({ level }: { level: number }) {
+  const percent = Math.max(0, Math.min(100, ((level - METER_FLOOR_DB) / -METER_FLOOR_DB) * 100));
+
+  return (
+    <div
+      role="meter"
+      aria-label="Microphone level"
+      aria-valuemin={METER_FLOOR_DB}
+      aria-valuemax={0}
+      aria-valuenow={Math.round(level)}
+      className="h-1.5 w-48 overflow-hidden rounded-full bg-muted"
+    >
+      <div
+        className={cn(
+          "h-full rounded-full transition-[width] duration-100",
+          level < FAINT_LEVEL_DB ? "bg-muted-foreground/50" : "bg-primary",
+        )}
+        style={{ width: `${percent}%` }}
+      />
+    </div>
+  );
+}
 
 export function LiveRecorder() {
   const live = useLiveTranscription();
@@ -55,6 +82,23 @@ export function LiveRecorder() {
         <p role="status" className="text-sm text-muted-foreground">
           {caption}
         </p>
+
+        {isListening && <LevelMeter level={live.level} />}
+
+        {live.hint && (
+          <p
+            role="status"
+            className="max-w-md rounded-lg border bg-accent px-4 py-2 text-center text-sm"
+          >
+            {live.hint}
+          </p>
+        )}
+
+        {live.quality && (
+          <p className="text-xs text-muted-foreground">
+            Last phrase · level {live.quality.level_db} dB · signal-to-noise {live.quality.snr_db} dB
+          </p>
+        )}
 
         {live.status === "idle" && (
           <div className="flex gap-2" role="group" aria-label="Language">
