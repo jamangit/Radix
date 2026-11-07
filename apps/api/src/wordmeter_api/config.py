@@ -20,5 +20,9 @@ class Settings(BaseSettings):
     max_stream_seconds: int = 1800
     vad_silence_ms: int = 500
 
+    # Starting values for the audio quality hints: calibrate them on your own microphone.
+    quality_min_level_db: float = -45.0
+    quality_min_snr_db: float = 12.0
+
 
 settings = Settings()  # type: ignore[call-arg]  # values are read from the environment

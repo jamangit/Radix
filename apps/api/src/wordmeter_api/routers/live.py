@@ -18,6 +18,7 @@ from wordmeter_api.db.models import User
 from wordmeter_api.dependencies import SessionDep
 from wordmeter_api.security import decode_ws_ticket
 from wordmeter_api.services.persistence import save_analysis
+from wordmeter_api.speech.quality import measure_quality
 from wordmeter_api.speech.segmenter import (
     BYTES_PER_SECOND,
     SegmenterConfig,
@@ -139,6 +140,18 @@ class LiveSession:
         while (phrase := await self._queue.get()) is not None:
             await self._transcribe(phrase)
 
+    def _measure(self, pcm: bytes) -> dict[str, Any]:
+        quality = measure_quality(
+            pcm,
+            min_level_db=settings.quality_min_level_db,
+            min_snr_db=settings.quality_min_snr_db,
+        )
+        return {
+            "level_db": quality.level_db,
+            "snr_db": quality.snr_db,
+            "verdict": quality.verdict,
+        }
+
     async def _transcribe(self, pcm: bytes) -> None:
         try:
             transcription = await asyncio.to_thread(self._transcriber, pcm, self.language)
@@ -146,7 +159,11 @@ class LiveSession:
             logger.exception("Live transcription failed")
             await self.fail("transcription_failed", "Could not transcribe this part")
             return
+
+        quality = self._measure(pcm)
         if not transcription.text:
+            # Heard as speech but nothing intelligible came out: often a faint or noisy signal.
+            await self.send({"type": "unclear", "quality": quality})
             return
 
         if self.language is None:
@@ -169,6 +186,7 @@ class LiveSession:
                 "text": transcription.text,
                 "words": words,
                 "total_words": self._total_words,
+                "quality": quality,
             }
         )
 
