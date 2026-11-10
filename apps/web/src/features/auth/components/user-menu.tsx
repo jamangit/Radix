@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/lib/api/auth";
 import { useCurrentUser } from "../use-current-user";
+import { isLocalMode } from "@/lib/app-mode";
 
 export function UserMenu() {
   const router = useRouter();
@@ -18,6 +19,10 @@ export function UserMenu() {
       router.replace("/login");
     },
   });
+
+  if (isLocalMode) {
+    return <p className="text-sm text-muted-foreground">Private · stored on this computer</p>;
+  }
 
   return (
     <div className="flex items-center gap-3 text-sm">

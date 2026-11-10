@@ -13,6 +13,7 @@ dependencies = [
     "faster-whisper>=1.2.1",
     "lingua-language-detector>=2.2.0",
     "numpy>=2.5.4",
+    "platformdirs>=4.14.5",
     "psycopg[binary]>=3.3.7",
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.16.2",
