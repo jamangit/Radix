@@ -3,12 +3,13 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { isLocalMode } from "@/lib/app-mode";
 
 export default function SplashPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => router.replace("/login"), 2600);
+    const timer = setTimeout(() => router.replace(isLocalMode ? "/dashboard" : "/login"), 2600);
     return () => clearTimeout(timer);
   }, [router]);
 
