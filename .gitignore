@@ -1,3 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
 
-apps/api/build/
-apps/api/dist/
+# Build outputs
+build/
+dist/
+out/
+.next/
+node_modules/
+test-results/
+playwright-report/
+
+# Secrets and local data
+.env
+.env.*
+!.env.example
+*.db
+*.db-wal
+*.db-shm
+
+# Editors and system files
+.DS_Store
