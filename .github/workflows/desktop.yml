@@ -1,11 +1,6 @@
 name: Desktop build
 
 on:
-  pull_request:
-    paths:
-      - "apps/api/**"
-      - "apps/web/**"
-      - ".github/workflows/desktop.yml"
   workflow_dispatch:
 
 jobs:
