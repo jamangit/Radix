@@ -1,0 +1,76 @@
+name: Desktop build
+
+on:
+  pull_request:
+    paths:
+      - "apps/api/**"
+      - "apps/web/**"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
+
+jobs:
+  engine-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/web/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      - name: Build the site in local mode
+        working-directory: apps/web
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build:local
+
+      - name: Install the engine dependencies
+        working-directory: apps/api
+        run: uv sync --frozen
+
+      - name: Self-test of the dependencies
+        working-directory: apps/api
+        run: uv run python desktop_entry.py --selftest
+
+      - name: Package the engine
+        working-directory: apps/api
+        run: uv run pyinstaller wordmeter-engine.spec --noconfirm
+
+      - name: Self-test of the packaged engine
+        working-directory: apps/api
+        run: ./dist/wordmeter-engine/wordmeter-engine.exe --selftest
+
+      - name: Start the packaged engine and check that it answers
+        working-directory: apps/api
+        env:
+          WORDMETER_DATA_DIR: ${{ runner.temp }}/wordmeter-data
+        run: |
+          ./dist/wordmeter-engine/wordmeter-engine.exe &
+          for attempt in $(seq 1 45); do
+            if curl -fsS http://127.0.0.1:8765/api/health; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8765/api/health
+          curl -fsS http://127.0.0.1:8765/api/auth/me
+          curl -fsS http://127.0.0.1:8765/ | grep -q "<title>Radix</title>"
+          taskkill //F //IM wordmeter-engine.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wordmeter-engine-windows
+          path: apps/api/dist/wordmeter-engine
+          retention-days: 7

@@ -11,6 +11,7 @@ import secrets
 os.environ.setdefault("JWT_SECRET", secrets.token_urlsafe(48))
 
 import asyncio  # noqa: E402
+import sys  # noqa: E402
 import uuid  # noqa: E402
 from collections.abc import AsyncIterator, Iterator, Sequence  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
@@ -156,6 +157,15 @@ def create_local_app(
     return app
 
 
+def _bundled_web_dir() -> Path | None:
+    """The site's files, when running as a packaged program (PyInstaller unpacks them here)."""
+    root = getattr(sys, "_MEIPASS", None)
+    if root is None:
+        return None
+    path = Path(root) / "web"
+    return path if path.is_dir() else None
+
+
 def main() -> None:
     port = int(os.environ.get("WORDMETER_PORT", DEFAULT_PORT))
     extra_hosts = [
@@ -170,7 +180,7 @@ def main() -> None:
     data_dir = default_data_dir()
     app = create_local_app(
         data_dir,
-        web_dir=Path(web) if web else None,
+        web_dir=Path(web) if web else _bundled_web_dir(),
         allowed_hosts=(*DEFAULT_ALLOWED_HOSTS, *extra_hosts),
     )
     print(f"Wordmeter (local) on http://127.0.0.1:{port} - data in {data_dir}")
