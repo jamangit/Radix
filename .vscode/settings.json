@@ -7,5 +7,6 @@
   "files.associations": {
     "*.css": "tailwindcss"
   },
-  "python.terminal.useEnvFile": true
+  "python.terminal.useEnvFile": true,
+  "python-envs.defaultEnvManager": "ms-python.python:system"
 }
